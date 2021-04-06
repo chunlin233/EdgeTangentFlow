@@ -40,18 +40,25 @@ def initial_ETF(input_img, size):
     grad_y = cv2.Sobel(src_n, cv2.CV_32FC1, 0, 1, ksize=5)
     
     #Compute gradient
-    gradientMag = cv2.sqrt(grad_x**2.0 + grad_y**2.0) 
+    # 计算梯度大小图：即欧几里德范数sqrt(x*x + y*y)
+    # 可替换函数：np.hypot(*sobel_xy(gray, sobel_kernel))
+    gradientMag = cv2.sqrt(grad_x**2.0 + grad_y**2.0)
+    # 线性归一化，将梯度图归一化到0-1
     gradientMag = cv2.normalize(gradientMag.astype('float32'), None, 0.0, 1.0, cv2.NORM_MINMAX)
     h,w = src.shape[0], src.shape[1]
+
+    # 归一化梯度方向向量，可优化
     for i in range(h):
         for j in range(w):
             u = grad_x[i][j]
             v = grad_y[i][j]
             n = np.array([v, u, 0.0])
+            # 默认为L2归一化
             cv2.normalize(np.array([v, u, 0.0]).astype('float32'), n)
             flowField[i][j] = n
     rotateFlow(flowField, flowField, 90.0)
 
+  # 旋转梯度方向向量90度，可优化
 def rotateFlow(src, dst, theta):
     theta = theta / 180.0 * M_PI;
     h,w = src.shape[0], src.shape[1]
@@ -80,6 +87,7 @@ def computeNewVector(x, y, kernel):
     t_cur_x = flowField[y][x]
     t_new = (0, 0, 0)
     h_r,w_r = refinedETF.shape[0], refinedETF.shape[1]
+    # 可改进
     for r in range(y - kernel, y + kernel + 1):
         for c in range(x - kernel, x + kernel + 1):
             if (r < 0 or r >= h_r or c < 0 or c >= w_r): 
@@ -136,6 +144,7 @@ def draw_arrowline(count,KERNEL):
 
 if __name__ == '__main__':
     initial_ETF(input_img, SIZE)
+    # 文中是迭代2-3次即可
     for i in range(10):
         refine_ETF(KERNEL)
         draw_arrowline(i,KERNEL)
